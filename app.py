@@ -1,18 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 from flask_socketio import SocketIO, emit
 from functools import wraps
-import json
 import secrets
+import json
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-# Admin password - CHANGE THIS!
-ADMIN_PASSWORD = "giapt2024"  # Đổi password này
-
-# Store for selected winner - using session instead
-# selected_winner = None
+# Admin password
+ADMIN_PASSWORD = "giapt2024"
 
 # Admin authentication decorator
 def admin_required(f):
@@ -31,7 +28,9 @@ def index():
 def players():
     if request.method == 'POST':
         names_text = request.form.get('names', '')
+        # Process names - split by comma or newline
         names = [name.strip() for name in names_text.replace('\n', ',').split(',') if name.strip()]
+        # Remove duplicates while preserving order
         seen = set()
         unique_names = []
         for name in names:
@@ -47,77 +46,112 @@ def players():
 @app.route('/wheel')
 def wheel():
     players = session.get('players', [])
-    return render_template('wheel.html', players=players)
+    # Get pre-selected winner if any
+    selected_winner_index = session.get('selected_winner_index', -1)
+    return render_template('wheel.html', 
+                         players=players,
+                         selected_winner_index=selected_winner_index)
 
 @app.route('/reset')
 def reset():
-    session.pop('players', None)
-    session.pop('selected_winner', None)  # Clear selected winner
+    session.clear()
     return redirect(url_for('index'))
 
-@app.route('/remove_winner/<winner>')
-def remove_winner(winner):
+@app.route('/remove_winner/<int:winner_index>')
+def remove_winner(winner_index):
     players = session.get('players', [])
-    if winner in players:
-        players.remove(winner)
+    if 0 <= winner_index < len(players):
+        players.pop(winner_index)
         session['players'] = players
+    # Clear any pre-selected winner
+    session.pop('selected_winner_index', None)
     return redirect(url_for('wheel'))
 
-# Admin login route
+# Admin routes
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
         password = request.form.get('password')
         if password == ADMIN_PASSWORD:
             session['is_admin'] = True
-            return redirect(url_for('admin_wheel'))
+            return redirect(url_for('admin_panel'))
         else:
             return render_template('admin_login.html', error=True)
     return render_template('admin_login.html')
 
-# Admin logout route
 @app.route('/admin/logout')
 def admin_logout():
     session.pop('is_admin', None)
     return redirect(url_for('index'))
 
-# Admin panel - now protected
 @app.route('/admin')
 @admin_required
-def admin_wheel():
+def admin_panel():
     players = session.get('players', [])
-    return render_template('admin_wheel.html', players=players)
+    selected_index = session.get('selected_winner_index', -1)
+    return render_template('admin_panel.html', 
+                         players=players,
+                         selected_index=selected_index)
 
-@app.route('/set_winner', methods=['POST'])
+@app.route('/admin/set_winner', methods=['POST'])
 @admin_required
 def set_winner():
     data = request.get_json()
-    if data and 'winner' in data:
-        winner = data['winner']
-        # Store in session instead of global variable
-        session['selected_winner'] = winner
-        print(f"Admin selected winner: {winner}")
+    if data and 'index' in data:
+        winner_index = int(data['index'])
+        players = session.get('players', [])
         
-        # Emit to all connected clients
-        socketio.emit('winner_selected', {'winner': winner})
-        
-        return jsonify({'success': True, 'winner': winner})
+        if 0 <= winner_index < len(players):
+            session['selected_winner_index'] = winner_index
+            # Broadcast to all connected clients
+            socketio.emit('winner_selected', {
+                'index': winner_index,
+                'name': players[winner_index]
+            })
+            return jsonify({
+                'success': True, 
+                'index': winner_index,
+                'name': players[winner_index]
+            })
+    
     return jsonify({'success': False}), 400
 
-@app.route('/get_selected_winner')
-def get_selected_winner():
-    # Get and clear selected winner from session
-    winner = session.pop('selected_winner', None)
-    print(f"Getting selected winner: {winner}")
-    return jsonify({'winner': winner})
+@app.route('/admin/clear_winner', methods=['POST'])
+@admin_required
+def clear_winner():
+    session.pop('selected_winner_index', None)
+    socketio.emit('winner_cleared')
+    return jsonify({'success': True})
 
+# API endpoint for wheel to check selected winner
+@app.route('/api/get_selected_winner')
+def get_selected_winner():
+    winner_index = session.get('selected_winner_index', -1)
+    players = session.get('players', [])
+    
+    if winner_index >= 0 and winner_index < len(players):
+        # Clear after getting (one-time use)
+        session.pop('selected_winner_index', None)
+        return jsonify({
+            'index': winner_index,
+            'name': players[winner_index]
+        })
+    
+    return jsonify({'index': -1, 'name': None})
+
+# Socket.IO events
 @socketio.on('connect')
 def handle_connect():
     print('Client connected')
     # Send current selected winner if any
-    winner = session.get('selected_winner')
-    if winner:
-        emit('winner_selected', {'winner': winner})
+    winner_index = session.get('selected_winner_index', -1)
+    players = session.get('players', [])
+    
+    if winner_index >= 0 and winner_index < len(players):
+        emit('winner_selected', {
+            'index': winner_index,
+            'name': players[winner_index]
+        })
 
 @socketio.on('disconnect')
 def handle_disconnect():

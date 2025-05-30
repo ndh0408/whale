@@ -9,89 +9,53 @@
         flex-direction: column;
         align-items: center;
         gap: 2rem;
-        position: relative;
     }
-    
-    /* Speed control buttons */
-    .btn-sm {
-        padding: 0.3rem 0.8rem;
-        font-size: 0.9rem;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-sm:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    }
-    
-    /* Shake animation for spin start */
-    @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px) rotate(-1deg); }
-        75% { transform: translateX(5px) rotate(1deg); }
-    }
-    
-    .canvas-wrapper.shake {
-        animation: shake 0.3s ease-in-out;
-    }
-    
-    /* Debug info */
 
     .canvas-wrapper {
         position: relative;
         filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.2));
-        transition: filter 0.3s ease;
+        transition: all 0.3s ease;
     }
 
     .canvas-wrapper.spinning {
-        filter: drop-shadow(0 0 40px rgba(102, 126, 234, 0.6));
+        filter: drop-shadow(0 0 50px rgba(102, 126, 234, 0.8));
     }
 
     #wheelCanvas {
-        max-width: 500px;
+        max-width: 600px;
         width: 100%;
         height: auto;
         cursor: pointer;
-        transition: transform 0.3s ease, filter 0.05s ease;
     }
 
-    #wheelCanvas:hover:not(.spinning) {
-        transform: scale(1.02);
-    }
-
-    /* Winner Display */
-    .winner-announcement {
+    /* Winner Modal */
+    .winner-modal {
         position: fixed;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.9);
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: all 0.3s ease;
     }
 
-    .winner-announcement.show {
-        opacity: 1;
-        visibility: visible;
+    .winner-modal.show {
+        display: flex;
     }
 
     .winner-content {
         text-align: center;
-        transform: scale(0.5);
-        transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        animation: bounceIn 0.5s ease-out;
     }
 
-    .winner-announcement.show .winner-content {
-        transform: scale(1);
+    @keyframes bounceIn {
+        0% { transform: scale(0.3); opacity: 0; }
+        50% { transform: scale(1.05); }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); opacity: 1; }
     }
 
     .winner-title {
@@ -100,12 +64,7 @@
         margin-bottom: 1rem;
         text-transform: uppercase;
         letter-spacing: 3px;
-        animation: glow 2s ease-in-out infinite;
-    }
-
-    @keyframes glow {
-        0%, 100% { text-shadow: 0 0 20px #ffd700, 0 0 40px #ffd700; }
-        50% { text-shadow: 0 0 30px #ffd700, 0 0 60px #ffd700; }
+        text-shadow: 0 0 30px #ffd700;
     }
 
     .winner-name {
@@ -113,19 +72,6 @@
         font-weight: 700;
         color: white;
         margin-bottom: 2rem;
-        animation: bounce 1s ease-in-out;
-    }
-
-    @keyframes bounce {
-        0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-        40% { transform: translateY(-30px); }
-        60% { transform: translateY(-15px); }
-    }
-
-    .winner-actions {
-        display: flex;
-        gap: 1rem;
-        justify-content: center;
     }
 
     /* Controls */
@@ -140,67 +86,11 @@
         font-size: 1.2rem;
         padding: 1rem 2rem;
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        position: relative;
-        overflow: hidden;
     }
 
     #spinButton:disabled {
         opacity: 0.6;
         cursor: not-allowed;
-    }
-
-    #spinButton::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transform: rotate(45deg);
-        transition: all 0.5s;
-        opacity: 0;
-    }
-
-    #spinButton:hover::after {
-        animation: shine 0.5s ease-in-out;
-    }
-
-    @keyframes shine {
-        0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); opacity: 0; }
-        50% { opacity: 1; }
-        100% { transform: translateX(100%) translateY(100%) rotate(45deg); opacity: 0; }
-    }
-
-    /* Confetti */
-    .confetti-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        overflow: hidden;
-        z-index: 999;
-    }
-
-    .confetti {
-        position: absolute;
-        width: 10px;
-        height: 10px;
-        background: #ffd700;
-        animation: confetti-fall 3s linear;
-    }
-
-    @keyframes confetti-fall {
-        0% {
-            transform: translateY(-100vh) rotate(0deg);
-            opacity: 1;
-        }
-        100% {
-            transform: translateY(100vh) rotate(720deg);
-            opacity: 0;
-        }
     }
 
     /* Stats */
@@ -222,80 +112,65 @@
         text-align: center;
     }
 
-    .stat-box h4 {
-        color: var(--primary);
-        font-size: 0.9rem;
-        margin-bottom: 0.25rem;
+    /* Confetti */
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background: #ffd700;
+        z-index: 999;
     }
 
-    .stat-box p {
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: var(--text);
-    }
-
-    /* Pulse animation for arrow during spin */
-    @keyframes arrowPulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.2); }
-    }
-    
-    /* Fast rotation indicator */
-    .speed-indicator {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 2rem;
-        color: #ffd700;
-        font-weight: bold;
-        opacity: 0;
-        pointer-events: none;
-        animation: speedPulse 0.5s ease-out;
-    }
-    
-    @keyframes speedPulse {
-        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-        50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-        100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-    }
+    /* Debug Panel */
     .debug-panel {
         position: fixed;
         bottom: 10px;
         right: 10px;
-        background: rgba(0,0,0,0.9);
+        background: rgba(0,0,0,0.95);
         color: white;
-        padding: 15px;
+        padding: 20px;
         font-family: monospace;
-        font-size: 12px;
+        font-size: 14px;
         border-radius: 8px;
-        max-width: 300px;
+        min-width: 300px;
         display: none;
         z-index: 1000;
+        border: 1px solid #444;
     }
 
     .debug-panel.show {
         display: block;
     }
 
-    .debug-panel h4 {
-        margin: 0 0 10px 0;
-        color: #4ECDC4;
-    }
-
-    .debug-panel .debug-row {
-        margin: 5px 0;
+    .debug-row {
+        margin: 8px 0;
         display: flex;
         justify-content: space-between;
     }
 
-    .debug-panel .debug-label {
-        color: #96CEB4;
+    .debug-label {
+        color: #4ECDC4;
     }
 
-    .debug-panel .debug-value {
-        color: #FFEEA7;
+    .debug-value {
+        color: #FFD93D;
         font-weight: bold;
+    }
+
+    .preset-indicator {
+        background: rgba(255, 200, 0, 0.2);
+        border: 2px solid #ffd700;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 8px;
+        text-align: center;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 0.8; }
+        50% { opacity: 1; }
+        100% { opacity: 0.8; }
     }
 </style>
 {% endblock %}
@@ -305,9 +180,14 @@
     <h2><i class="fas fa-dharmachakra"></i> Vòng quay may mắn</h2>
     
     {% if players %}
+        <!-- Show preset winner if any -->
+        {% if selected_winner_index >= 0 %}
+       
+        {% endif %}
+
         <div class="wheel-container">
             <div class="canvas-wrapper">
-                <canvas id="wheelCanvas" width="500" height="500"></canvas>
+                <canvas id="wheelCanvas" width="600" height="600"></canvas>
             </div>
 
             <div class="controls">
@@ -321,22 +201,6 @@
                     <i class="fas fa-redo"></i> Làm mới
                 </a>
             </div>
-            
-            <!-- Speed control -->
-            <div style="margin-top: 1rem; text-align: center;">
-                <label style="margin-right: 10px; color: #666;">Tốc độ:</label>
-                <div style="display: inline-flex; gap: 0.5rem;">
-                    <button class="btn btn-sm" onclick="setSpeed(5000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: #e0e0e0; color: #333;">
-                        🐢 Chậm (5s)
-                    </button>
-                    <button class="btn btn-sm" onclick="setSpeed(3000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: var(--primary); color: white;">
-                        ⚡ Nhanh (3s)
-                    </button>
-                    <button class="btn btn-sm" onclick="setSpeed(2000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: var(--secondary); color: white;">
-                        🚀 Siêu nhanh (2s)
-                    </button>
-                </div>
-            </div>
 
             <div class="wheel-stats">
                 <div class="stat-box">
@@ -348,13 +212,13 @@
                     <p id="spinCount">0</p>
                 </div>
                 <div class="stat-box">
-                    <h4>Thời gian</h4>
-                    <p id="spinTime">3s</p>
+                    <h4>Chế độ</h4>
+                    <p>{{ "Admin" if selected_winner_index >= 0 else "Random" }}</p>
                 </div>
             </div>
             
             <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 1rem;">
-                💡 Nhấn phím 'D' để bật/tắt chế độ debug | ⚡ Có thể điều chỉnh tốc độ quay
+                💡 Nhấn phím 'D' để bật/tắt debug mode
             </p>
         </div>
     {% else %}
@@ -368,13 +232,13 @@
     {% endif %}
 </div>
 
-<!-- Winner Announcement Modal -->
-<div class="winner-announcement" id="winnerModal">
+<!-- Winner Modal -->
+<div class="winner-modal" id="winnerModal">
     <div class="winner-content">
-        <h3 class="winner-title">Chúc mừng!</h3>
+        <h3 class="winner-title">🎉 Chúc mừng! 🎉</h3>
         <div class="winner-name" id="winnerName"></div>
         <div class="winner-actions">
-            <button class="btn btn-success" onclick="closeWinnerModal()">
+            <button class="btn btn-success" onclick="closeModal()">
                 <i class="fas fa-check"></i> Đóng
             </button>
             <button class="btn btn-secondary" id="removeWinnerBtn">
@@ -384,12 +248,9 @@
     </div>
 </div>
 
-<!-- Confetti Container -->
-<div class="confetti-container" id="confettiContainer"></div>
-
 <!-- Debug Panel -->
 <div class="debug-panel" id="debugPanel">
-    <h4>🔧 Debug Info</h4>
+    <h4 style="color: #4ECDC4; margin-bottom: 15px;">🔧 Debug Information</h4>
     <div id="debugContent"></div>
 </div>
 {% endblock %}
@@ -397,509 +258,386 @@
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
-    // Players data from server
-    const players = {{ players|tojson }};
+// Players data and preset winner
+const players = {{ players|tojson }};
+let presetWinnerIndex = {{ selected_winner_index }};
+
+// Canvas setup
+const canvas = document.getElementById('wheelCanvas');
+const ctx = canvas.getContext('2d');
+
+// Constants
+const CENTER_X = 300;
+const CENTER_Y = 300;
+const WHEEL_RADIUS = 250;
+const ARROW_SIZE = 30;
+
+// Colors for segments
+const COLORS = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+    '#FFEEA7', '#FFD93D', '#FC6170', '#6BCB77',
+    '#4D96FF', '#9D84B7', '#E8B4BC', '#A8E6CF'
+];
+
+// State
+let currentRotation = 0;
+let isSpinning = false;
+let spinCount = 0;
+let debugMode = false;
+
+// Socket connection
+const socket = io();
+
+socket.on('winner_selected', (data) => {
+    presetWinnerIndex = data.index;
+    updateDebugPanel();
+   
+});
+
+socket.on('winner_cleared', () => {
+    presetWinnerIndex = -1;
+    updateDebugPanel();
+    showNotification('Admin đã xóa lựa chọn');
+});
+
+// Draw wheel function
+function drawWheel() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Canvas setup
-    const canvas = document.getElementById('wheelCanvas');
-    const ctx = canvas.getContext('2d');
+    if (players.length === 0) return;
     
-    // DOM elements
-    const spinButton = document.getElementById('spinButton');
-    const spinCountEl = document.getElementById('spinCount');
-    const winnerModal = document.getElementById('winnerModal');
-    const winnerNameEl = document.getElementById('winnerName');
-    const removeWinnerBtn = document.getElementById('removeWinnerBtn');
-    const confettiContainer = document.getElementById('confettiContainer');
-    const debugPanel = document.getElementById('debugPanel');
+    const anglePerSegment = (Math.PI * 2) / players.length;
+    
+    // Draw segments
+    players.forEach((player, index) => {
+        const startAngle = currentRotation + (index * anglePerSegment);
+        const endAngle = startAngle + anglePerSegment;
+        
+        // Draw segment
+        ctx.beginPath();
+        ctx.moveTo(CENTER_X, CENTER_Y);
+        ctx.arc(CENTER_X, CENTER_Y, WHEEL_RADIUS, startAngle, endAngle);
+        ctx.closePath();
+        
+        // Fill segment
+        ctx.fillStyle = COLORS[index % COLORS.length];
+        ctx.fill();
+        
+        // Draw border
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        
+        // Draw text
+        ctx.save();
+        ctx.translate(CENTER_X, CENTER_Y);
+        ctx.rotate(startAngle + anglePerSegment / 2);
+        
+        // Move out from center
+        ctx.translate(WHEEL_RADIUS * 0.7, 0);
+        
+        // Rotate text to be readable
+        if (startAngle + anglePerSegment / 2 > Math.PI / 2 && startAngle + anglePerSegment / 2 < 3 * Math.PI / 2) {
+            ctx.rotate(Math.PI);
+            ctx.textAlign = 'right';
+        } else {
+            ctx.textAlign = 'left';
+        }
+        
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 16px Arial';
+        ctx.shadowColor = 'rgba(255,255,255,0.8)';
+        ctx.shadowBlur = 3;
+        const text = debugMode ? `${index}: ${player}` : player;
+        ctx.fillText(text, 0, 5);
+        ctx.restore();
+    });
+    
+    // Draw center circle
+    ctx.beginPath();
+    ctx.arc(CENTER_X, CENTER_Y, 50, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+    
+    // Draw arrow at top
+    ctx.fillStyle = '#FF0000';
+    ctx.beginPath();
+    ctx.moveTo(CENTER_X - ARROW_SIZE/2, 20);
+    ctx.lineTo(CENTER_X + ARROW_SIZE/2, 20);
+    ctx.lineTo(CENTER_X, 50);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#8B0000';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+}
+
+// Get winner index based on rotation
+function getWinnerIndex() {
+    if (players.length === 0) return -1;
+    
+    const anglePerSegment = (Math.PI * 2) / players.length;
+    
+    // Normalize rotation
+    let normalizedRotation = currentRotation % (Math.PI * 2);
+    while (normalizedRotation < 0) normalizedRotation += Math.PI * 2;
+    
+    // Arrow is at top (3π/2)
+    const arrowAngle = 3 * Math.PI / 2;
+    
+    // Calculate which segment is at the arrow
+    let offset = (arrowAngle - normalizedRotation) % (Math.PI * 2);
+    while (offset < 0) offset += Math.PI * 2;
+    
+    const index = Math.floor(offset / anglePerSegment);
+    return index % players.length;
+}
+
+// Spin wheel
+function spinWheel() {
+    if (isSpinning || players.length === 0) return;
+    
+    isSpinning = true;
+    spinCount++;
+    document.getElementById('spinCount').textContent = spinCount;
+    document.getElementById('spinButton').disabled = true;
+    
+    const anglePerSegment = (Math.PI * 2) / players.length;
+    let targetIndex;
+    
+    // Check for preset winner
+    if (presetWinnerIndex >= 0 && presetWinnerIndex < players.length) {
+        targetIndex = presetWinnerIndex;
+        console.log('Using preset winner:', players[targetIndex], 'Index:', targetIndex);
+    } else {
+        targetIndex = Math.floor(Math.random() * players.length);
+        console.log('Random winner:', players[targetIndex], 'Index:', targetIndex);
+    }
+    
+    // Calculate target rotation
+    // We want segment targetIndex to be at the arrow position (top = 3π/2)
+    // Segment i center is at angle: i * anglePerSegment + anglePerSegment/2
+    // When wheel rotation is R, segment i is at: R + i * anglePerSegment + anglePerSegment/2
+    // We want: R + targetIndex * anglePerSegment + anglePerSegment/2 = 3π/2
+    // So: R = 3π/2 - targetIndex * anglePerSegment - anglePerSegment/2
+    
+    const arrowAngle = 3 * Math.PI / 2;
+    let targetRotation = arrowAngle - targetIndex * anglePerSegment - anglePerSegment / 2;
+    
+    // Add small random offset within segment (only for non-preset)
+    if (presetWinnerIndex < 0) {
+        const randomOffset = (Math.random() - 0.5) * anglePerSegment * 0.6;
+        targetRotation += randomOffset;
+    }
+    
+    // Calculate rotation needed
+    let deltaRotation = targetRotation - currentRotation;
+    
+    // Normalize to [-π, π]
+    while (deltaRotation > Math.PI) deltaRotation -= 2 * Math.PI;
+    while (deltaRotation < -Math.PI) deltaRotation += 2 * Math.PI;
+    
+    // Add multiple full rotations (10-15 vòng)
+    const fullRotations = 10 + Math.random() * 5;
+    const totalRotation = deltaRotation + fullRotations * Math.PI * 2;
+    
+    // Animation duration (6-8 giây)
+    const duration = 6000 + Math.random() * 2000;
+    const startTime = Date.now();
+    const startRotation = currentRotation;
+    
+    function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // Easing function
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        
+        currentRotation = startRotation + totalRotation * easeOut;
+        
+        drawWheel();
+        updateDebugPanel();
+        
+        if (progress < 1) {
+            requestAnimationFrame(animate);
+        } else {
+            // Animation complete
+            isSpinning = false;
+            document.getElementById('spinButton').disabled = false;
+            
+            const winnerIndex = getWinnerIndex();
+            const winner = players[winnerIndex];
+            
+            console.log('Animation complete');
+            console.log('Final winner:', winner, 'Index:', winnerIndex);
+            console.log('Expected:', players[targetIndex], 'Index:', targetIndex);
+            
+            // Show winner
+            setTimeout(() => {
+                showWinner(winner, winnerIndex);
+            }, 500);
+            
+            // Clear preset winner after use
+            if (presetWinnerIndex >= 0) {
+                console.log('Clearing preset winner');
+                presetWinnerIndex = -1;
+                
+                // Clear on server
+                fetch('/api/clear_selected_winner', {
+                    method: 'POST'
+                })
+                    .then(response => response.json())
+                    .then(data => console.log('Server cleared:', data))
+                    .catch(err => console.error('Error clearing:', err));
+            }
+        }
+    }
+    
+    animate();
+}
+
+// Show winner
+function showWinner(winner, index) {
+    document.getElementById('winnerName').textContent = winner;
+    document.getElementById('winnerModal').classList.add('show');
+    
+    // Update remove button
+    document.getElementById('removeWinnerBtn').onclick = () => {
+        window.location.href = `/remove_winner/${index}`;
+    };
+    
+    createConfetti();
+}
+
+// Close modal
+function closeModal() {
+    document.getElementById('winnerModal').classList.remove('show');
+}
+
+// Create confetti effect
+function createConfetti() {
+    const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFEEA7', '#FC6170'];
+    for (let i = 0; i < 100; i++) {
+        setTimeout(() => {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.animation = `fall ${3 + Math.random() * 2}s linear`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 5000);
+        }, i * 20);
+    }
+}
+
+// Update debug panel
+function updateDebugPanel() {
+    if (!debugMode) return;
+    
+    const winnerIndex = getWinnerIndex();
     const debugContent = document.getElementById('debugContent');
     
-    // Configuration
-    const WHEEL_RADIUS = 220;
-    const CENTER_X = 250;
-    const CENTER_Y = 250;
-    let SPIN_DURATION = 3000; // 3 seconds (can be changed)
-    const MIN_SPINS = 8;  // More spins
-    const MAX_SPINS = 12; // Even more spins for excitement
-    
-    // Colors for segments
-    const COLORS = [
-        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-        '#FFEEA7', '#FFD93D', '#FC6170', '#6BCB77',
-        '#4D96FF', '#9D84B7', '#E8B4BC', '#A8E6CF'
-    ];
-    
-    // State variables
-    let currentAngle = 0; // Current rotation angle of the wheel
-    let isSpinning = false;
-    let selectedWinner = null; // Pre-selected winner from admin
-    let spinCount = 0;
-    let debugMode = false;
-    
-    // Socket.IO connection for admin selection
-    const socket = io();
-    
-    socket.on('connect', () => {
-        console.log('Connected to server');
-    });
-    
-    socket.on('winner_selected', (data) => {
-        selectedWinner = data.winner;
-        console.log('Admin selected winner:', selectedWinner);
-    });
-    
-    // Check for pre-selected winner on page load
-    async function checkSelectedWinner() {
-        try {
-            const response = await fetch('/get_selected_winner');
-            const data = await response.json();
-            if (data.winner) {
-                selectedWinner = data.winner;
-                console.log('Pre-selected winner:', selectedWinner);
-            }
-        } catch (error) {
-            console.error('Error checking selected winner:', error);
-        }
-    }
-    
-    // Draw the wheel
-    function drawWheel() {
-        // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        const segmentAngle = (2 * Math.PI) / players.length;
-        // Đặt lại góc bắt đầu là currentAngle (không trừ segmentAngle/2)
-        const baseAngle = currentAngle;
-        
-        // Draw each segment
-        players.forEach((player, index) => {
-            // Calculate segment start and end angles
-            const startAngle = baseAngle + index * segmentAngle;
-            const endAngle = startAngle + segmentAngle;
-            
-            // Draw segment
-            ctx.beginPath();
-            ctx.moveTo(CENTER_X, CENTER_Y);
-            ctx.arc(CENTER_X, CENTER_Y, WHEEL_RADIUS, startAngle, endAngle);
-            ctx.closePath();
-            
-            // Fill with gradient
-            const gradient = ctx.createRadialGradient(CENTER_X, CENTER_Y, 0, CENTER_X, CENTER_Y, WHEEL_RADIUS);
-            const color = COLORS[index % COLORS.length];
-            gradient.addColorStop(0, color + 'FF');
-            gradient.addColorStop(1, color + 'CC');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            
-            // Draw border
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 3;
-            ctx.stroke();
-            
-            // Draw text
-            ctx.save();
-            ctx.translate(CENTER_X, CENTER_Y);
-            ctx.rotate(startAngle + segmentAngle / 2 + Math.PI / 2);
-            ctx.textAlign = 'right';
-            ctx.fillStyle = '#111';
-            ctx.font = `bold ${players.length > 20 ? 12 : 16}px Arial`;
-            ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            ctx.shadowBlur = 4;
-            
-            // Show index in debug mode
-            const displayText = debugMode ? `${index}: ${player}` : player;
-            ctx.fillText(displayText, WHEEL_RADIUS - 20, 5);
-            ctx.restore();
-        });
-        
-        // Draw center circle
-        ctx.beginPath();
-        ctx.arc(CENTER_X, CENTER_Y, 40, 0, 2 * Math.PI);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        ctx.strokeStyle = '#e0e0e0';
-        ctx.lineWidth = 4;
-        ctx.stroke();
-        
-        // Draw center dot
-        ctx.beginPath();
-        ctx.arc(CENTER_X, CENTER_Y, 8, 0, 2 * Math.PI);
-        ctx.fillStyle = '#667eea';
-        ctx.fill();
-        
-        // Draw arrow pointer at TOP
-        ctx.save();
-        
-        // Remove pulsing effect during spin
-        // if (isSpinning) {
-        //     const pulse = Math.sin(Date.now() * 0.01) * 0.1 + 1;
-        //     ctx.scale(pulse, pulse);
-        // }
-        
-        ctx.fillStyle = '#e53e3e';
-        ctx.strokeStyle = '#c53030';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = 'rgba(0,0,0,0.5)';
-        ctx.shadowBlur = 6;
-        ctx.shadowOffsetY = 3;
-        
-        // Arrow pointing down from top
-        ctx.beginPath();
-        ctx.moveTo(CENTER_X - 20, CENTER_Y - WHEEL_RADIUS - 35);
-        ctx.lineTo(CENTER_X + 20, CENTER_Y - WHEEL_RADIUS - 35);
-        ctx.lineTo(CENTER_X, CENTER_Y - WHEEL_RADIUS - 10);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-    }
-    
-    // Get winner at arrow position
-    function getWinnerIndex() {
-        const segmentAngle = (2 * Math.PI) / players.length;
-        const arrowAngle = -Math.PI / 2; // Arrow is at top (270 degrees)
-        
-        // Normalize current angle
-        let normalizedAngle = currentAngle % (2 * Math.PI);
-        while (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
-        
-        // Find which segment contains the arrow
-        // We need to check which segment's range includes the arrow position
-        for (let i = 0; i < players.length; i++) {
-            let segmentStart = normalizedAngle + i * segmentAngle;
-            let segmentEnd = segmentStart + segmentAngle;
-            
-            // Normalize segment angles
-            segmentStart = segmentStart % (2 * Math.PI);
-            segmentEnd = segmentEnd % (2 * Math.PI);
-            
-            // Convert arrow angle to 0-2π range
-            let arrowNormalized = (arrowAngle + 2 * Math.PI) % (2 * Math.PI);
-            
-            // Check if arrow is in this segment
-            if (segmentStart <= segmentEnd) {
-                // Normal case
-                if (arrowNormalized >= segmentStart && arrowNormalized < segmentEnd) {
-                    return i;
-                }
-            } else {
-                // Segment crosses 0 degrees
-                if (arrowNormalized >= segmentStart || arrowNormalized < segmentEnd) {
-                    return i;
-                }
-            }
-        }
-        
-        // Fallback to first segment
-        return 0;
-    }
-    
-    // Update debug panel
-    function updateDebugPanel() {
-        if (!debugMode) return;
-        
-        const winnerIndex = getWinnerIndex();
-        const degrees = (currentAngle * 180 / Math.PI) % 360;
-        const normalizedDegrees = degrees < 0 ? degrees + 360 : degrees;
-        
-        debugContent.innerHTML = `
-            <div class="debug-row">
-                <span class="debug-label">Current Angle:</span>
-                <span class="debug-value">${normalizedDegrees.toFixed(1)}°</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">Winner Index:</span>
-                <span class="debug-value">${winnerIndex}</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">Winner Name:</span>
-                <span class="debug-value">${players[winnerIndex]}</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">Total Players:</span>
-                <span class="debug-value">${players.length}</span>
-            </div>
-            <div class="debug-row">
-                <span class="debug-label">Segment Size:</span>
-                <span class="debug-value">${(360 / players.length).toFixed(1)}°</span>
-            </div>
-        `;
-    }
-    
-    // Easing function for smooth animation with faster start
-    function easeOutQuart(t) {
-        return 1 - Math.pow(1 - t, 4);
-    }
-    
-    // Add spinning effect to button during spin
-    function updateSpinButton(isSpinning) {
-        if (isSpinning) {
-            spinButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG QUAY...';
-            spinButton.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
-        } else {
-            spinButton.innerHTML = '<i class="fas fa-play-circle"></i> QUAY NGAY';
-            spinButton.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-        }
-    }
-    
-    // Spin the wheel
-    function spin() {
-        if (isSpinning || players.length === 0) return;
-        
-        isSpinning = true;
-        spinButton.disabled = true;
-        updateSpinButton(true);
-        canvas.classList.add('spinning');
-        canvas.parentElement.classList.add('spinning', 'shake');
-        
-        setTimeout(() => {
-            canvas.parentElement.classList.remove('shake');
-        }, 300);
-        
-        spinCount++;
-        spinCountEl.textContent = spinCount;
-        
-        playSpinSound();
-        createSpinningParticles();
-        
-        // Determine target winner
-        let targetIndex;
-        let useSelectedWinner = false;
-        if (selectedWinner && players.includes(selectedWinner)) {
-            targetIndex = players.indexOf(selectedWinner);
-            useSelectedWinner = true;
-            console.log('Spinning to pre-selected winner:', selectedWinner);
-        } else {
-            targetIndex = Math.floor(Math.random() * players.length);
-            console.log('Random target index:', targetIndex);
-        }
-        
-        const segmentAngle = (2 * Math.PI) / players.length;
-        const arrowAngle = -Math.PI / 2;
-        // Tính góc cuối cùng để segment người thắng nằm ở mũi tên
-        const finalAngle = arrowAngle - (targetIndex * segmentAngle + segmentAngle / 2);
-        
-        const spins = MIN_SPINS + Math.random() * (MAX_SPINS - MIN_SPINS);
-        let totalRotation = spins * 2 * Math.PI + (finalAngle - currentAngle);
-        
-        // Add slight randomness to final position within segment
-        let randomOffset = 0;
-        if (!useSelectedWinner) {
-            randomOffset = (Math.random() - 0.5) * segmentAngle * 0.6;
-        }
-        totalRotation += randomOffset;
-        
-        // Ensure we always spin forward
-        while (totalRotation < 2 * Math.PI) {
-            totalRotation += 2 * Math.PI;
-        }
-        
-        const startAngle = currentAngle;
-        const startTime = Date.now();
-        
-        let lastTickAngle = 0;
-        const tickInterval = segmentAngle / 2;
-        
-        function animate() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / SPIN_DURATION, 1);
-            const easedProgress = easeOutQuart(progress);
-            
-            currentAngle = startAngle + totalRotation * easedProgress;
-            
-            if (Math.floor(currentAngle / tickInterval) !== Math.floor(lastTickAngle / tickInterval)) {
-                playTickSound(1 - progress);
-                canvas.style.filter = `brightness(${1.1 - progress * 0.1})`;
-                setTimeout(() => {
-                    canvas.style.filter = 'brightness(1)';
-                }, 50);
-            }
-            lastTickAngle = currentAngle;
-            
-            drawWheel();
-            updateDebugPanel();
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                isSpinning = false;
-                spinButton.disabled = false;
-                updateSpinButton(false);
-                canvas.classList.remove('spinning');
-                canvas.parentElement.classList.remove('spinning');
-                
-                const winner = players[targetIndex];
-                
-                console.log('Final winner:', winner);
-                
-                playWinSound();
-                
-                setTimeout(() => {
-                    winnerNameEl.textContent = winner;
-                    winnerModal.classList.add('show');
-                    createConfetti();
-                }, 300);
-                
-                // Reset selectedWinner sau khi quay xong
-                if (useSelectedWinner) {
-                    selectedWinner = null;
-                }
-            }
-        }
-        
-        animate();
-    }
-    
-    // Create spinning particles effect
-    function createSpinningParticles() {
-        const particleCount = 20;
-        const wrapper = document.querySelector('.canvas-wrapper');
-        
-        for (let i = 0; i < particleCount; i++) {
-            setTimeout(() => {
-                const particle = document.createElement('div');
-                particle.style.cssText = `
-                    position: absolute;
-                    width: 4px;
-                    height: 4px;
-                    background: ${COLORS[Math.floor(Math.random() * COLORS.length)]};
-                    border-radius: 50%;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    pointer-events: none;
-                `;
-                
-                const angle = (i / particleCount) * Math.PI * 2;
-                const distance = WHEEL_RADIUS + 20 + Math.random() * 30;
-                const duration = 0.5 + Math.random() * 0.5;
-                
-                wrapper.appendChild(particle);
-                
-                // Animate particle
-                particle.animate([
-                    { 
-                        transform: `translate(-50%, -50%) rotate(${angle}rad) translateX(0) scale(1)`,
-                        opacity: 1
-                    },
-                    { 
-                        transform: `translate(-50%, -50%) rotate(${angle + Math.PI}rad) translateX(${distance}px) scale(0)`,
-                        opacity: 0
-                    }
-                ], {
-                    duration: duration * 1000,
-                    easing: 'ease-out'
-                }).onfinish = () => particle.remove();
-            }, i * 50);
-        }
-    }
-    
-    // Sound effects (optional - won't error if not implemented)
-    function playSpinSound() {
-        // Placeholder for spin start sound
-    }
-    
-    function playTickSound(volume) {
-        // Placeholder for tick sound
-    }
-    
-    function playWinSound() {
-        // Placeholder for win sound
-    }
-    
-    // Create confetti effect
-    function createConfetti() {
-        const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFEEA7', '#FC6170'];
-        const confettiCount = 150;
-        
-        for (let i = 0; i < confettiCount; i++) {
-            setTimeout(() => {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + '%';
-                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.width = (Math.random() * 10 + 5) + 'px';
-                confetti.style.height = confetti.style.width;
-                confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
-                confettiContainer.appendChild(confetti);
-                
-                setTimeout(() => confetti.remove(), 5000);
-            }, i * 10);
-        }
-    }
-    
-    // Close winner modal
-    function closeWinnerModal() {
-        winnerModal.classList.remove('show');
-        confettiContainer.innerHTML = '';
-    }
-    
-    // Remove winner and reload
-    removeWinnerBtn.addEventListener('click', () => {
-        const winnerIndex = getWinnerIndex();
-        const winner = players[winnerIndex];
-        window.location.href = `/remove_winner/${encodeURIComponent(winner)}`;
-    });
-    
-    // Event listeners
-    spinButton.addEventListener('click', spin);
-    canvas.addEventListener('click', spin);
-    
-    // Toggle debug mode with 'D' key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'd' || e.key === 'D') {
-            debugMode = !debugMode;
-            debugPanel.classList.toggle('show');
-            drawWheel(); // Redraw to show/hide indices
-            updateDebugPanel();
-        }
-    });
-    
-    // Add animation styles
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
+    debugContent.innerHTML = `
+        <div class="debug-row">
+            <span class="debug-label">Current Rotation:</span>
+            <span class="debug-value">${(currentRotation * 180 / Math.PI).toFixed(2)}°</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Normalized:</span>
+            <span class="debug-value">${((currentRotation % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) * 180 / Math.PI).toFixed(2)}°</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Winner Index:</span>
+            <span class="debug-value">${winnerIndex}</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Winner Name:</span>
+            <span class="debug-value">${players[winnerIndex] || 'N/A'}</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Total Players:</span>
+            <span class="debug-value">${players.length}</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Preset Winner:</span>
+            <span class="debug-value">${presetWinnerIndex >= 0 ? `${players[presetWinnerIndex]} (${presetWinnerIndex})` : 'None'}</span>
+        </div>
+        <div class="debug-row">
+            <span class="debug-label">Is Spinning:</span>
+            <span class="debug-value">${isSpinning}</span>
+        </div>
     `;
-    document.head.appendChild(style);
+}
+
+// Show notification
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: #667eea;
+        color: white;
+        border-radius: 8px;
+        animation: slideIn 0.3s ease-out;
+        z-index: 1000;
+    `;
+    notification.textContent = message;
+    document.body.appendChild(notification);
     
-    // Make closeWinnerModal global
-    window.closeWinnerModal = closeWinnerModal;
-    
-    // Set spin speed
-    function setSpeed(duration) {
-        SPIN_DURATION = duration;
-        
-        // Update time display
-        document.getElementById('spinTime').textContent = (duration / 1000) + 's';
-        
-        // Update button styles
-        document.querySelectorAll('[onclick^="setSpeed"]').forEach(btn => {
-            if (btn.getAttribute('onclick').includes(duration)) {
-                btn.style.background = 'var(--primary)';
-                btn.style.color = 'white';
-            } else {
-                btn.style.background = '#e0e0e0';
-                btn.style.color = '#333';
-            }
-        });
-        
-        // Show feedback
-        showNotification(`Tốc độ quay: ${duration / 1000}s`);
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Event listeners
+document.getElementById('spinButton').addEventListener('click', spinWheel);
+
+// Toggle debug mode
+document.addEventListener('keydown', (e) => {
+    if (e.key.toLowerCase() === 'd') {
+        debugMode = !debugMode;
+        document.getElementById('debugPanel').classList.toggle('show');
+        drawWheel();
+        updateDebugPanel();
     }
-    
-    // Make setSpeed global
-    window.setSpeed = setSpeed;
-    
-    // Initialize
-    checkSelectedWinner();
-    drawWheel();
-    updateDebugPanel();
+});
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fall {
+        to {
+            transform: translateY(100vh) rotate(360deg);
+            opacity: 0;
+        }
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); }
+        to { transform: translateX(0); }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); }
+        to { transform: translateX(100%); }
+    }
+`;
+document.head.appendChild(style);
+
+// Initialize
+window.closeModal = closeModal;
+
+// Check for preset winner on page load
+if (presetWinnerIndex >= 0) {
+    console.log('Page loaded with preset winner:', players[presetWinnerIndex], 'Index:', presetWinnerIndex);
+}
+
+drawWheel();
+updateDebugPanel();
 </script>
 {% endblock %}

@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Wheel of Fortune{% endblock %}
+
+{% block extra_css %}
+<style>
+    .admin-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .admin-header {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        text-align: center;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .admin-header h2 {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .admin-header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .admin-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+    }
+
+    @media (max-width: 768px) {
+        .admin-content {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .section {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: var(--shadow);
+    }
+
+    .section h3 {
+        color: var(--primary);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .players-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .player-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+
+    .player-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
+    }
+
+    .player-item.selected {
+        background: rgba(72, 187, 120, 0.1);
+        border-color: var(--success);
+        box-shadow: 0 0 0 3px rgba(72, 187, 120, 0.1);
+    }
+
+    .player-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .player-number {
+        width: 40px;
+        height: 40px;
+        background: var(--primary);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.1rem;
+    }
+
+    .player-item.selected .player-number {
+        background: var(--success);
+    }
+
+    .player-name {
+        font-weight: 500;
+        font-size: 1.1rem;
+        color: var(--text);
+    }
+
+    .select-button {
+        padding: 0.5rem 1rem;
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .select-button:hover {
+        background: var(--primary-dark);
+        transform: scale(1.05);
+    }
+
+    .player-item.selected .select-button {
+        background: var(--success);
+    }
+
+    .current-selection {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid var(--primary);
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .current-selection h4 {
+        color: var(--primary);
+        margin-bottom: 1rem;
+        font-size: 1.2rem;
+    }
+
+    .selected-player {
+        font-size: 2rem;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 1rem;
+    }
+
+    .no-selection {
+        color: #999;
+        font-style: italic;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        text-align: center;
+    }
+
+    .stat-card i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        opacity: 0.9;
+    }
+
+    .stat-card h5 {
+        font-size: 2rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-card p {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    /* Animation */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+
+    .selected-indicator {
+        animation: pulse 2s infinite;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h2><i class="fas fa-user-shield"></i> Admin Control Panel</h2>
+        <p>Chọn người chiến thắng cho vòng quay tiếp theo</p>
+    </div>
+
+    <div class="admin-content">
+        <!-- Left Column - Player Selection -->
+        <div class="section">
+            <h3><i class="fas fa-users"></i> Danh sách người chơi</h3>
+            
+            {% if players %}
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <h5>{{ players|length }}</h5>
+                        <p>Tổng số người</p>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                        <i class="fas fa-trophy"></i>
+                        <h5 id="selectedCount">{{ 1 if selected_index >= 0 else 0 }}</h5>
+                        <p>Đã chọn</p>
+                    </div>
+                </div>
+
+                <div class="players-list">
+                    {% for player in players %}
+                        <div class="player-item {% if loop.index0 == selected_index %}selected{% endif %}" 
+                             data-index="{{ loop.index0 }}"
+                             onclick="selectPlayer({{ loop.index0 }}, '{{ player }}')">
+                            <div class="player-info">
+                                <div class="player-number">{{ loop.index0 }}</div>
+                                <div class="player-name">{{ player }}</div>
+                            </div>
+                            <button class="select-button">
+                                {% if loop.index0 == selected_index %}
+                                    <i class="fas fa-check"></i> Đã chọn
+                                {% else %}
+                                    <i class="fas fa-crown"></i> Chọn
+                                {% endif %}
+                            </button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 3rem;">
+                    <i class="fas fa-user-slash" style="font-size: 3rem; color: #999; margin-bottom: 1rem; display: block;"></i>
+                    <p style="color: #666;">Chưa có người chơi nào</p>
+                    <a href="{{ url_for('index') }}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Thêm người chơi
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right Column - Current Selection & Actions -->
+        <div class="section">
+            <h3><i class="fas fa-cog"></i> Điều khiển</h3>
+            
+            <div class="current-selection">
+                <h4><i class="fas fa-crown"></i> Người được chọn thắng</h4>
+                <div id="currentSelection">
+                    {% if selected_index >= 0 and selected_index < players|length %}
+                        <div class="selected-player selected-indicator">
+                            <i class="fas fa-user-check" style="color: var(--success); font-size: 3rem; margin-bottom: 1rem;"></i><br>
+                            Index: {{ selected_index }}<br>
+                            {{ players[selected_index] }}
+                        </div>
+                    {% else %}
+                        <p class="no-selection">Chưa chọn ai</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="clearSelection()" {% if selected_index < 0 %}disabled{% endif %}>
+                    <i class="fas fa-times"></i> Xóa lựa chọn
+                </button>
+                <a href="{{ url_for('wheel') }}" class="btn btn-primary">
+                    <i class="fas fa-dharmachakra"></i> Đến vòng quay
+                </a>
+                <a href="{{ url_for('players') }}" class="btn btn-secondary">
+                    <i class="fas fa-list"></i> Danh sách
+                </a>
+            </div>
+
+            <hr style="margin: 2rem 0;">
+
+            <h3><i class="fas fa-info-circle"></i> Hướng dẫn</h3>
+            <ol style="line-height: 1.8;">
+                <li>Chọn người bạn muốn thắng từ danh sách bên trái</li>
+                <li>Người được chọn sẽ được highlight màu xanh</li>
+                <li>Đến trang vòng quay và nhấn "Quay ngay"</li>
+                <li>Vòng quay sẽ tự động dừng ở người đã chọn</li>
+                <li>Có thể xóa lựa chọn để quay ngẫu nhiên</li>
+            </ol>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 2rem;">
+        <a href="{{ url_for('admin_logout') }}" class="btn btn-secondary" style="background: var(--warning);">
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất Admin
+        </a>
+    </div>
+</div>
+
+<script>
+let currentSelectedIndex = {{ selected_index if selected_index >= 0 else 'null' }};
+
+async function selectPlayer(index, name) {
+    try {
+        const response = await fetch('/admin/set_winner', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ index: index })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Update UI
+            document.querySelectorAll('.player-item').forEach(item => {
+                item.classList.remove('selected');
+                const btn = item.querySelector('.select-button');
+                btn.innerHTML = '<i class="fas fa-crown"></i> Chọn';
+            });
+            
+            const selectedItem = document.querySelector(`[data-index="${index}"]`);
+            selectedItem.classList.add('selected');
+            const selectedBtn = selectedItem.querySelector('.select-button');
+            selectedBtn.innerHTML = '<i class="fas fa-check"></i> Đã chọn';
+            
+            // Update current selection display
+            document.getElementById('currentSelection').innerHTML = `
+                <div class="selected-player selected-indicator">
+                    <i class="fas fa-user-check" style="color: var(--success); font-size: 3rem; margin-bottom: 1rem;"></i><br>
+                    Index: ${index}<br>
+                    ${name}
+                </div>
+            `;
+            
+            // Update stats
+            document.getElementById('selectedCount').textContent = '1';
+            
+            // Enable clear button
+            document.querySelector('button[onclick="clearSelection()"]').disabled = false;
+            
+            currentSelectedIndex = index;
+            
+            showNotification(`Đã chọn: ${name} (Index: ${index})`, 'success');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Có lỗi xảy ra!', 'error');
+    }
+}
+
+async function clearSelection() {
+    try {
+        const response = await fetch('/admin/clear_winner', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            // Update UI
+            document.querySelectorAll('.player-item').forEach(item => {
+                item.classList.remove('selected');
+                const btn = item.querySelector('.select-button');
+                btn.innerHTML = '<i class="fas fa-crown"></i> Chọn';
+            });
+            
+            document.getElementById('currentSelection').innerHTML = '<p class="no-selection">Chưa chọn ai</p>';
+            document.getElementById('selectedCount').textContent = '0';
+            document.querySelector('button[onclick="clearSelection()"]').disabled = true;
+            
+            currentSelectedIndex = null;
+            
+            showNotification('Đã xóa lựa chọn', 'info');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showNotification('Có lỗi xảy ra!', 'error');
+    }
+}
+
+function showNotification(message, type) {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 1rem 2rem;
+        background: ${type === 'success' ? '#48bb78' : type === 'error' ? '#f56565' : '#667eea'};
+        color: white;
+        border-radius: 8px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    `;
+    notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(100%); opacity: 0; }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}
