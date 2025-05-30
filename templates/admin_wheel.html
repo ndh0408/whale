@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Admin - Vòng quay{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Quản lý vòng quay</h2>
+    
+    {% if players %}
+        <div class="admin-controls">
+            <div class="player-list">
+                <h3>Danh sách người chơi</h3>
+                <div class="players-grid">
+                    {% for player in players %}
+                    <div class="player-item">
+                        <span>{{ player }}</span>
+                        <button class="btn-select" data-player="{{ player }}">Chọn người thắng</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <p>Chưa có người chơi nào được thêm vào. <a href="{{ url_for('index') }}">Nhập tên người chơi</a></p>
+    {% endif %}
+</div>
+
+<style>
+    .admin-controls {
+        padding: 20px;
+    }
+    
+    .players-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .player-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .btn-select {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-select:hover {
+        background-color: #218838;
+        transform: translateY(-2px);
+    }
+</style>
+
+<script>
+document.querySelectorAll('.btn-select').forEach(button => {
+    button.addEventListener('click', async () => {
+        const player = button.dataset.player;
+        try {
+            const response = await fetch('/set_winner', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ winner: player })
+            });
+            
+            if (response.ok) {
+                window.location.href = '/wheel';
+            } else {
+                alert('Có lỗi xảy ra khi chọn người thắng');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Có lỗi xảy ra khi chọn người thắng');
+        }
+    });
+});
+</script>
+{% endblock %} 

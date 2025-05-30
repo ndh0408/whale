@@ -15,6 +15,11 @@
         max-width: 600px;
         width: 100%;
         height: auto;
+        transition: transform 0.3s ease;
+    }
+
+    #wheelCanvas:hover {
+        transform: scale(1.02);
     }
 
     .controls {
@@ -24,12 +29,61 @@
     }
 
     .winner-display {
-        font-size: 2rem;
-        font-weight: bold;
-        color: var(--accent-color);
         text-align: center;
         margin: 1rem 0;
         min-height: 3rem;
+        padding: 1rem;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transform: scale(0);
+        opacity: 0;
+        transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .winner-display.show {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    .winner-name {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        margin-bottom: 0.5rem;
+    }
+
+    .winner-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 1rem;
+    }
+
+    .btn-remove {
+        background-color: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+
+    .btn-remove:hover {
+        background-color: #c0392b;
+        transform: translateY(-2px);
+    }
+
+    .confetti {
+        position: fixed;
+        width: 10px;
+        height: 10px;
+        background-color: #f00;
+        opacity: 0;
+        pointer-events: none;
     }
 </style>
 {% endblock %}
@@ -41,7 +95,12 @@
     {% if players %}
         <div class="wheel-container">
             <canvas id="wheelCanvas"></canvas>
-            <div class="winner-display" id="winnerDisplay"></div>
+            <div class="winner-display" id="winnerDisplay">
+                <div class="winner-name" id="winnerName"></div>
+                <div class="winner-actions">
+                    <button class="btn-remove" id="removeWinner" style="display: none;">Xóa người thắng</button>
+                </div>
+            </div>
             <div class="controls">
                 <button id="spinButton" class="btn">Quay</button>
                 <a href="{{ url_for('players') }}" class="btn">Quay lại danh sách</a>
@@ -55,12 +114,15 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
     const players = {{ players|tojson }};
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
     const spinButton = document.getElementById('spinButton');
     const winnerDisplay = document.getElementById('winnerDisplay');
+    const winnerName = document.getElementById('winnerName');
+    const removeWinnerBtn = document.getElementById('removeWinner');
     
     // Set canvas size
     canvas.width = 600;
@@ -74,6 +136,38 @@
     
     let currentRotation = 0;
     let isSpinning = false;
+    let currentWinner = null;
+    let selectedWinner = null;
+
+    // Connect to WebSocket
+    const socket = io();
+    
+    // Listen for winner selection
+    socket.on('winner_selected', function(data) {
+        selectedWinner = data.winner;
+        // KHÔNG tự động quay, chỉ lưu selectedWinner
+    });
+    
+    function createConfetti() {
+        for (let i = 0; i < 100; i++) {
+            const confetti = document.createElement('div');
+            confetti.className = 'confetti';
+            confetti.style.left = Math.random() * 100 + 'vw';
+            confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+            confetti.style.opacity = '1';
+            document.body.appendChild(confetti);
+            
+            const animation = confetti.animate([
+                { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                { transform: `translateY(100vh) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+            ], {
+                duration: 3000 + Math.random() * 2000,
+                easing: 'cubic-bezier(0.1, 0.9, 0.2, 1)'
+            });
+            
+            animation.onfinish = () => confetti.remove();
+        }
+    }
     
     function drawWheel() {
         const centerX = canvas.width / 2;
@@ -85,28 +179,28 @@
         
         // Draw wheel segments
         const segmentAngle = (2 * Math.PI) / players.length;
-        
-        players.forEach((player, index) => {
+        let fontSize = 16;
+        if (players.length > 20) fontSize = 12;
+        if (players.length > 35) fontSize = 9;
+        if (players.length > 50) fontSize = 7;
+        players.forEach(function(player, index) {
             const startAngle = currentRotation + index * segmentAngle;
             const endAngle = startAngle + segmentAngle;
-            
             // Draw segment
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.arc(centerX, centerY, radius, startAngle, endAngle);
             ctx.closePath();
-            
             ctx.fillStyle = colors[index % colors.length];
             ctx.fill();
             ctx.stroke();
-            
             // Draw text
             ctx.save();
             ctx.translate(centerX, centerY);
             ctx.rotate(startAngle + segmentAngle / 2);
             ctx.textAlign = 'right';
             ctx.fillStyle = '#000';
-            ctx.font = 'bold 16px Arial';
+            ctx.font = 'bold ' + fontSize + 'px Arial';
             ctx.fillText(player, radius - 20, 5);
             ctx.restore();
         });
@@ -120,20 +214,82 @@
         
         // Draw arrow
         ctx.beginPath();
-        ctx.moveTo(centerX + radius + 10, centerY);
-        ctx.lineTo(centerX + radius - 10, centerY - 15);
-        ctx.lineTo(centerX + radius - 10, centerY + 15);
+        ctx.moveTo(centerX + radius, centerY);
+        ctx.lineTo(centerX + radius + 20, centerY - 15);
+        ctx.lineTo(centerX + radius + 20, centerY + 15);
         ctx.closePath();
         ctx.fillStyle = '#e74c3c';
         ctx.fill();
     }
     
-    function spinWheel() {
+    function calculateRotationForWinner(winner) {
+        const segmentAngle = (2 * Math.PI) / players.length;
+        const winnerIndex = players.indexOf(winner);
+        if (winnerIndex === -1) return null;
+        // Đưa tâm segment người thắng về đúng vị trí mũi tên (góc 0)
+        return - (winnerIndex * segmentAngle + segmentAngle / 2);
+    }
+    
+    function spinWheelToWinner(winner) {
         if (isSpinning) return;
         
         isSpinning = true;
         spinButton.disabled = true;
-        winnerDisplay.textContent = '';
+        winnerDisplay.classList.remove('show');
+        removeWinnerBtn.style.display = 'none';
+        
+        const targetRotation = calculateRotationForWinner(winner);
+        if (targetRotation === null) {
+            isSpinning = false;
+            spinButton.disabled = false;
+            return;
+        }
+        
+        const spinDuration = 5000; // 5 seconds
+        const startTime = Date.now();
+        const startRotation = currentRotation;
+        const spinAngle = 5 + Math.random() * 5; // 5-10 full rotations
+        const finalRotation = targetRotation + spinAngle * 2 * Math.PI;
+        
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / spinDuration, 1);
+            
+            // Easing function for smooth deceleration
+            const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+            
+            currentRotation = startRotation + (finalRotation - startRotation) * easeOut(progress);
+            drawWheel();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                spinButton.disabled = false;
+                currentWinner = winner;
+                winnerName.textContent = currentWinner;
+                winnerDisplay.classList.add('show');
+                removeWinnerBtn.style.display = 'block';
+                createConfetti();
+            }
+        }
+        
+        animate();
+    }
+    
+    function spinWheel() {
+        if (isSpinning) return;
+        
+        // If there's a selected winner, use that instead of random
+        if (selectedWinner) {
+            spinWheelToWinner(selectedWinner);
+            return;
+        }
+        
+        isSpinning = true;
+        spinButton.disabled = true;
+        winnerDisplay.classList.remove('show');
+        removeWinnerBtn.style.display = 'none';
         
         const spinDuration = 5000; // 5 seconds
         const startTime = Date.now();
@@ -155,15 +311,15 @@
             } else {
                 isSpinning = false;
                 spinButton.disabled = false;
-                
-                // Calculate winner
-                const normalizedRotation = currentRotation % (2 * Math.PI);
+                // Calculate winner (arrow at 3h, angle 0)
+                const normalizedRotation = (currentRotation % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
                 const segmentAngle = (2 * Math.PI) / players.length;
-                const winnerIndex = Math.floor(
-                    (2 * Math.PI - normalizedRotation) / segmentAngle
-                ) % players.length;
-                
-                winnerDisplay.textContent = `Người thắng: ${players[winnerIndex]}`;
+                const winnerIndex = Math.floor(((2 * Math.PI - normalizedRotation) / segmentAngle)) % players.length;
+                currentWinner = players[winnerIndex];
+                winnerName.textContent = currentWinner;
+                winnerDisplay.classList.add('show');
+                removeWinnerBtn.style.display = 'block';
+                createConfetti();
             }
         }
         
@@ -175,5 +331,10 @@
     
     // Event listeners
     spinButton.addEventListener('click', spinWheel);
+    removeWinnerBtn.addEventListener('click', () => {
+        if (currentWinner) {
+            window.location.href = `/remove_winner/${encodeURIComponent(currentWinner)}`;
+        }
+    });
 </script>
 {% endblock %} 
