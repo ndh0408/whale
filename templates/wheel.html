@@ -11,10 +11,43 @@
         gap: 2rem;
         position: relative;
     }
+    
+    /* Speed control buttons */
+    .btn-sm {
+        padding: 0.3rem 0.8rem;
+        font-size: 0.9rem;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-sm:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* Shake animation for spin start */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px) rotate(-1deg); }
+        75% { transform: translateX(5px) rotate(1deg); }
+    }
+    
+    .canvas-wrapper.shake {
+        animation: shake 0.3s ease-in-out;
+    }
+    
+    /* Debug info */
 
     .canvas-wrapper {
         position: relative;
         filter: drop-shadow(0 0 30px rgba(0, 0, 0, 0.2));
+        transition: filter 0.3s ease;
+    }
+
+    .canvas-wrapper.spinning {
+        filter: drop-shadow(0 0 40px rgba(102, 126, 234, 0.6));
     }
 
     #wheelCanvas {
@@ -22,6 +55,11 @@
         width: 100%;
         height: auto;
         cursor: pointer;
+        transition: transform 0.3s ease, filter 0.05s ease;
+    }
+
+    #wheelCanvas:hover:not(.spinning) {
+        transform: scale(1.02);
     }
 
     /* Winner Display */
@@ -196,22 +234,68 @@
         color: var(--text);
     }
 
-    /* Debug info */
-    .debug-info {
+    /* Pulse animation for arrow during spin */
+    @keyframes arrowPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+    
+    /* Fast rotation indicator */
+    .speed-indicator {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 2rem;
+        color: #ffd700;
+        font-weight: bold;
+        opacity: 0;
+        pointer-events: none;
+        animation: speedPulse 0.5s ease-out;
+    }
+    
+    @keyframes speedPulse {
+        0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        50% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+        100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+    }
+    .debug-panel {
         position: fixed;
         bottom: 10px;
         right: 10px;
-        background: rgba(0,0,0,0.8);
+        background: rgba(0,0,0,0.9);
         color: white;
-        padding: 10px;
+        padding: 15px;
         font-family: monospace;
         font-size: 12px;
-        border-radius: 5px;
+        border-radius: 8px;
+        max-width: 300px;
         display: none;
+        z-index: 1000;
     }
 
-    .debug-info.show {
+    .debug-panel.show {
         display: block;
+    }
+
+    .debug-panel h4 {
+        margin: 0 0 10px 0;
+        color: #4ECDC4;
+    }
+
+    .debug-panel .debug-row {
+        margin: 5px 0;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .debug-panel .debug-label {
+        color: #96CEB4;
+    }
+
+    .debug-panel .debug-value {
+        color: #FFEEA7;
+        font-weight: bold;
     }
 </style>
 {% endblock %}
@@ -237,6 +321,22 @@
                     <i class="fas fa-redo"></i> Làm mới
                 </a>
             </div>
+            
+            <!-- Speed control -->
+            <div style="margin-top: 1rem; text-align: center;">
+                <label style="margin-right: 10px; color: #666;">Tốc độ:</label>
+                <div style="display: inline-flex; gap: 0.5rem;">
+                    <button class="btn btn-sm" onclick="setSpeed(5000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: #e0e0e0; color: #333;">
+                        🐢 Chậm (5s)
+                    </button>
+                    <button class="btn btn-sm" onclick="setSpeed(3000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: var(--primary); color: white;">
+                        ⚡ Nhanh (3s)
+                    </button>
+                    <button class="btn btn-sm" onclick="setSpeed(2000)" style="padding: 0.3rem 0.8rem; font-size: 0.9rem; background: var(--secondary); color: white;">
+                        🚀 Siêu nhanh (2s)
+                    </button>
+                </div>
+            </div>
 
             <div class="wheel-stats">
                 <div class="stat-box">
@@ -249,9 +349,13 @@
                 </div>
                 <div class="stat-box">
                     <h4>Thời gian</h4>
-                    <p id="spinTime">5s</p>
+                    <p id="spinTime">3s</p>
                 </div>
             </div>
+            
+            <p style="text-align: center; color: #666; font-size: 0.9rem; margin-top: 1rem;">
+                💡 Nhấn phím 'D' để bật/tắt chế độ debug | ⚡ Có thể điều chỉnh tốc độ quay
+            </p>
         </div>
     {% else %}
         <div style="text-align: center; padding: 3rem;">
@@ -283,130 +387,134 @@
 <!-- Confetti Container -->
 <div class="confetti-container" id="confettiContainer"></div>
 
-<!-- Debug Info -->
-<div class="debug-info" id="debugInfo"></div>
+<!-- Debug Panel -->
+<div class="debug-panel" id="debugPanel">
+    <h4>🔧 Debug Info</h4>
+    <div id="debugContent"></div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 <script>
+    // Players data from server
     const players = {{ players|tojson }};
+    
+    // Canvas setup
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
+    
+    // DOM elements
     const spinButton = document.getElementById('spinButton');
     const spinCountEl = document.getElementById('spinCount');
     const winnerModal = document.getElementById('winnerModal');
     const winnerNameEl = document.getElementById('winnerName');
     const removeWinnerBtn = document.getElementById('removeWinnerBtn');
     const confettiContainer = document.getElementById('confettiContainer');
-    const debugInfo = document.getElementById('debugInfo');
+    const debugPanel = document.getElementById('debugPanel');
+    const debugContent = document.getElementById('debugContent');
     
     // Configuration
-    const config = {
-        wheelRadius: 220,
-        centerX: 250,
-        centerY: 250,
-        spinDuration: 5000,
-        minSpins: 5,
-        maxSpins: 8,
-        colors: [
-            '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-            '#FFEEA7', '#FFD93D', '#FC6170', '#6BCB77',
-            '#4D96FF', '#9D84B7', '#E8B4BC', '#A8E6CF'
-        ]
-    };
-
-    // State
-    let currentRotation = 0;
+    const WHEEL_RADIUS = 220;
+    const CENTER_X = 250;
+    const CENTER_Y = 250;
+    let SPIN_DURATION = 3000; // 3 seconds (can be changed)
+    const MIN_SPINS = 8;  // More spins
+    const MAX_SPINS = 12; // Even more spins for excitement
+    
+    // Colors for segments
+    const COLORS = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+        '#FFEEA7', '#FFD93D', '#FC6170', '#6BCB77',
+        '#4D96FF', '#9D84B7', '#E8B4BC', '#A8E6CF'
+    ];
+    
+    // State variables
+    let currentAngle = 0; // Current rotation angle of the wheel
     let isSpinning = false;
-    let selectedWinner = null;
+    let selectedWinner = null; // Pre-selected winner from admin
     let spinCount = 0;
-    let currentWinner = null;
-
-    // Socket connection
+    let debugMode = false;
+    
+    // Socket.IO connection for admin selection
     const socket = io();
     
-    socket.on('connect', function() {
+    socket.on('connect', () => {
         console.log('Connected to server');
     });
     
-    socket.on('winner_selected', function(data) {
+    socket.on('winner_selected', (data) => {
         selectedWinner = data.winner;
-        console.log('Admin selected via socket:', selectedWinner);
-        alert('Admin đã chọn: ' + selectedWinner);
+        console.log('Admin selected winner:', selectedWinner);
     });
-
-    // Check for pre-selected winner
+    
+    // Check for pre-selected winner on page load
     async function checkSelectedWinner() {
         try {
             const response = await fetch('/get_selected_winner');
             const data = await response.json();
             if (data.winner) {
                 selectedWinner = data.winner;
-                console.log('Pre-selected winner from server:', selectedWinner);
-                alert('Người được chọn sẵn: ' + selectedWinner);
+                console.log('Pre-selected winner:', selectedWinner);
             }
         } catch (error) {
-            console.error('Error getting selected winner:', error);
+            console.error('Error checking selected winner:', error);
         }
     }
     
-    // Check on page load
-    checkSelectedWinner();
-
-    // Drawing functions
+    // Draw the wheel
     function drawWheel() {
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
         const segmentAngle = (2 * Math.PI) / players.length;
+        // Đặt lại góc bắt đầu là currentAngle (không trừ segmentAngle/2)
+        const baseAngle = currentAngle;
         
-        // Draw segments - Start from TOP and go CLOCKWISE
+        // Draw each segment
         players.forEach((player, index) => {
-            // Calculate angles
-            // When rotation = 0, segment 0 should be at top
-            // -PI/2 is top position (12 o'clock)
-            const startAngle = -Math.PI / 2 + currentRotation + index * segmentAngle;
+            // Calculate segment start and end angles
+            const startAngle = baseAngle + index * segmentAngle;
             const endAngle = startAngle + segmentAngle;
             
             // Draw segment
             ctx.beginPath();
-            ctx.moveTo(config.centerX, config.centerY);
-            ctx.arc(config.centerX, config.centerY, config.wheelRadius, startAngle, endAngle);
+            ctx.moveTo(CENTER_X, CENTER_Y);
+            ctx.arc(CENTER_X, CENTER_Y, WHEEL_RADIUS, startAngle, endAngle);
             ctx.closePath();
             
-            // Gradient fill
-            const gradient = ctx.createRadialGradient(
-                config.centerX, config.centerY, 0,
-                config.centerX, config.centerY, config.wheelRadius
-            );
-            const color = config.colors[index % config.colors.length];
+            // Fill with gradient
+            const gradient = ctx.createRadialGradient(CENTER_X, CENTER_Y, 0, CENTER_X, CENTER_Y, WHEEL_RADIUS);
+            const color = COLORS[index % COLORS.length];
             gradient.addColorStop(0, color + 'FF');
             gradient.addColorStop(1, color + 'CC');
             ctx.fillStyle = gradient;
             ctx.fill();
             
-            // Border
+            // Draw border
             ctx.strokeStyle = '#fff';
             ctx.lineWidth = 3;
             ctx.stroke();
             
             // Draw text
             ctx.save();
-            ctx.translate(config.centerX, config.centerY);
-            ctx.rotate(startAngle + segmentAngle / 2);
+            ctx.translate(CENTER_X, CENTER_Y);
+            ctx.rotate(startAngle + segmentAngle / 2 + Math.PI / 2);
             ctx.textAlign = 'right';
-            ctx.fillStyle = '#fff';
+            ctx.fillStyle = '#111';
             ctx.font = `bold ${players.length > 20 ? 12 : 16}px Arial`;
             ctx.shadowColor = 'rgba(0,0,0,0.5)';
             ctx.shadowBlur = 4;
-            ctx.fillText(player, config.wheelRadius - 20, 5);
+            
+            // Show index in debug mode
+            const displayText = debugMode ? `${index}: ${player}` : player;
+            ctx.fillText(displayText, WHEEL_RADIUS - 20, 5);
             ctx.restore();
         });
         
         // Draw center circle
         ctx.beginPath();
-        ctx.arc(config.centerX, config.centerY, 40, 0, 2 * Math.PI);
+        ctx.arc(CENTER_X, CENTER_Y, 40, 0, 2 * Math.PI);
         ctx.fillStyle = '#fff';
         ctx.fill();
         ctx.strokeStyle = '#e0e0e0';
@@ -415,68 +523,291 @@
         
         // Draw center dot
         ctx.beginPath();
-        ctx.arc(config.centerX, config.centerY, 8, 0, 2 * Math.PI);
+        ctx.arc(CENTER_X, CENTER_Y, 8, 0, 2 * Math.PI);
         ctx.fillStyle = '#667eea';
         ctx.fill();
         
         // Draw arrow pointer at TOP
         ctx.save();
+        
+        // Remove pulsing effect during spin
+        // if (isSpinning) {
+        //     const pulse = Math.sin(Date.now() * 0.01) * 0.1 + 1;
+        //     ctx.scale(pulse, pulse);
+        // }
+        
         ctx.fillStyle = '#e53e3e';
         ctx.strokeStyle = '#c53030';
         ctx.lineWidth = 2;
         ctx.shadowColor = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur = 6;
-        ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 3;
         
-        // Arrow pointing DOWN from top
+        // Arrow pointing down from top
         ctx.beginPath();
-        ctx.moveTo(config.centerX - 20, config.centerY - config.wheelRadius - 35);
-        ctx.lineTo(config.centerX + 20, config.centerY - config.wheelRadius - 35);
-        ctx.lineTo(config.centerX, config.centerY - config.wheelRadius - 10);
+        ctx.moveTo(CENTER_X - 20, CENTER_Y - WHEEL_RADIUS - 35);
+        ctx.lineTo(CENTER_X + 20, CENTER_Y - WHEEL_RADIUS - 35);
+        ctx.lineTo(CENTER_X, CENTER_Y - WHEEL_RADIUS - 10);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
         ctx.restore();
     }
-
-    // Calculate winner at arrow position (TOP)
-    function getWinnerAtPosition() {
-        // Arrow is at top (-PI/2 or 270 degrees)
-        // We need to find which segment is at this position
-        
-        // Normalize rotation to 0-2π range
-        let normalizedRotation = currentRotation % (2 * Math.PI);
-        while (normalizedRotation < 0) normalizedRotation += 2 * Math.PI;
-        
+    
+    // Get winner at arrow position
+    function getWinnerIndex() {
         const segmentAngle = (2 * Math.PI) / players.length;
+        const arrowAngle = -Math.PI / 2; // Arrow is at top (270 degrees)
         
-        // Since segments start from top when rotation=0,
-        // and we rotate the whole wheel by currentRotation,
-        // the segment at top is determined by how much we've rotated
-        let segmentAtTop = Math.floor(normalizedRotation / segmentAngle);
+        // Normalize current angle
+        let normalizedAngle = currentAngle % (2 * Math.PI);
+        while (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
         
-        // Handle edge case
-        if (segmentAtTop >= players.length) segmentAtTop = 0;
+        // Find which segment contains the arrow
+        // We need to check which segment's range includes the arrow position
+        for (let i = 0; i < players.length; i++) {
+            let segmentStart = normalizedAngle + i * segmentAngle;
+            let segmentEnd = segmentStart + segmentAngle;
+            
+            // Normalize segment angles
+            segmentStart = segmentStart % (2 * Math.PI);
+            segmentEnd = segmentEnd % (2 * Math.PI);
+            
+            // Convert arrow angle to 0-2π range
+            let arrowNormalized = (arrowAngle + 2 * Math.PI) % (2 * Math.PI);
+            
+            // Check if arrow is in this segment
+            if (segmentStart <= segmentEnd) {
+                // Normal case
+                if (arrowNormalized >= segmentStart && arrowNormalized < segmentEnd) {
+                    return i;
+                }
+            } else {
+                // Segment crosses 0 degrees
+                if (arrowNormalized >= segmentStart || arrowNormalized < segmentEnd) {
+                    return i;
+                }
+            }
+        }
         
-        return segmentAtTop;
+        // Fallback to first segment
+        return 0;
     }
-
-    // Update debug info
-    function updateDebugInfo() {
-        const winnerIndex = getWinnerAtPosition();
-        const normalizedRotation = ((currentRotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-        const degrees = (normalizedRotation * 180 / Math.PI).toFixed(2);
+    
+    // Update debug panel
+    function updateDebugPanel() {
+        if (!debugMode) return;
         
-        debugInfo.innerHTML = `
-            Rotation: ${degrees}°<br>
-            Winner Index: ${winnerIndex}<br>
-            Winner: ${players[winnerIndex]}<br>
-            Selected: ${selectedWinner || 'None'}
+        const winnerIndex = getWinnerIndex();
+        const degrees = (currentAngle * 180 / Math.PI) % 360;
+        const normalizedDegrees = degrees < 0 ? degrees + 360 : degrees;
+        
+        debugContent.innerHTML = `
+            <div class="debug-row">
+                <span class="debug-label">Current Angle:</span>
+                <span class="debug-value">${normalizedDegrees.toFixed(1)}°</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Winner Index:</span>
+                <span class="debug-value">${winnerIndex}</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Winner Name:</span>
+                <span class="debug-value">${players[winnerIndex]}</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Total Players:</span>
+                <span class="debug-value">${players.length}</span>
+            </div>
+            <div class="debug-row">
+                <span class="debug-label">Segment Size:</span>
+                <span class="debug-value">${(360 / players.length).toFixed(1)}°</span>
+            </div>
         `;
     }
-
-    // Confetti effect
+    
+    // Easing function for smooth animation with faster start
+    function easeOutQuart(t) {
+        return 1 - Math.pow(1 - t, 4);
+    }
+    
+    // Add spinning effect to button during spin
+    function updateSpinButton(isSpinning) {
+        if (isSpinning) {
+            spinButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG QUAY...';
+            spinButton.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+        } else {
+            spinButton.innerHTML = '<i class="fas fa-play-circle"></i> QUAY NGAY';
+            spinButton.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+        }
+    }
+    
+    // Spin the wheel
+    function spin() {
+        if (isSpinning || players.length === 0) return;
+        
+        isSpinning = true;
+        spinButton.disabled = true;
+        updateSpinButton(true);
+        canvas.classList.add('spinning');
+        canvas.parentElement.classList.add('spinning', 'shake');
+        
+        setTimeout(() => {
+            canvas.parentElement.classList.remove('shake');
+        }, 300);
+        
+        spinCount++;
+        spinCountEl.textContent = spinCount;
+        
+        playSpinSound();
+        createSpinningParticles();
+        
+        // Determine target winner
+        let targetIndex;
+        let useSelectedWinner = false;
+        if (selectedWinner && players.includes(selectedWinner)) {
+            targetIndex = players.indexOf(selectedWinner);
+            useSelectedWinner = true;
+            console.log('Spinning to pre-selected winner:', selectedWinner);
+        } else {
+            targetIndex = Math.floor(Math.random() * players.length);
+            console.log('Random target index:', targetIndex);
+        }
+        
+        const segmentAngle = (2 * Math.PI) / players.length;
+        const arrowAngle = -Math.PI / 2;
+        // Tính góc cuối cùng để segment người thắng nằm ở mũi tên
+        const finalAngle = arrowAngle - (targetIndex * segmentAngle + segmentAngle / 2);
+        
+        const spins = MIN_SPINS + Math.random() * (MAX_SPINS - MIN_SPINS);
+        let totalRotation = spins * 2 * Math.PI + (finalAngle - currentAngle);
+        
+        // Add slight randomness to final position within segment
+        let randomOffset = 0;
+        if (!useSelectedWinner) {
+            randomOffset = (Math.random() - 0.5) * segmentAngle * 0.6;
+        }
+        totalRotation += randomOffset;
+        
+        // Ensure we always spin forward
+        while (totalRotation < 2 * Math.PI) {
+            totalRotation += 2 * Math.PI;
+        }
+        
+        const startAngle = currentAngle;
+        const startTime = Date.now();
+        
+        let lastTickAngle = 0;
+        const tickInterval = segmentAngle / 2;
+        
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / SPIN_DURATION, 1);
+            const easedProgress = easeOutQuart(progress);
+            
+            currentAngle = startAngle + totalRotation * easedProgress;
+            
+            if (Math.floor(currentAngle / tickInterval) !== Math.floor(lastTickAngle / tickInterval)) {
+                playTickSound(1 - progress);
+                canvas.style.filter = `brightness(${1.1 - progress * 0.1})`;
+                setTimeout(() => {
+                    canvas.style.filter = 'brightness(1)';
+                }, 50);
+            }
+            lastTickAngle = currentAngle;
+            
+            drawWheel();
+            updateDebugPanel();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                spinButton.disabled = false;
+                updateSpinButton(false);
+                canvas.classList.remove('spinning');
+                canvas.parentElement.classList.remove('spinning');
+                
+                const winner = players[targetIndex];
+                
+                console.log('Final winner:', winner);
+                
+                playWinSound();
+                
+                setTimeout(() => {
+                    winnerNameEl.textContent = winner;
+                    winnerModal.classList.add('show');
+                    createConfetti();
+                }, 300);
+                
+                // Reset selectedWinner sau khi quay xong
+                if (useSelectedWinner) {
+                    selectedWinner = null;
+                }
+            }
+        }
+        
+        animate();
+    }
+    
+    // Create spinning particles effect
+    function createSpinningParticles() {
+        const particleCount = 20;
+        const wrapper = document.querySelector('.canvas-wrapper');
+        
+        for (let i = 0; i < particleCount; i++) {
+            setTimeout(() => {
+                const particle = document.createElement('div');
+                particle.style.cssText = `
+                    position: absolute;
+                    width: 4px;
+                    height: 4px;
+                    background: ${COLORS[Math.floor(Math.random() * COLORS.length)]};
+                    border-radius: 50%;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    pointer-events: none;
+                `;
+                
+                const angle = (i / particleCount) * Math.PI * 2;
+                const distance = WHEEL_RADIUS + 20 + Math.random() * 30;
+                const duration = 0.5 + Math.random() * 0.5;
+                
+                wrapper.appendChild(particle);
+                
+                // Animate particle
+                particle.animate([
+                    { 
+                        transform: `translate(-50%, -50%) rotate(${angle}rad) translateX(0) scale(1)`,
+                        opacity: 1
+                    },
+                    { 
+                        transform: `translate(-50%, -50%) rotate(${angle + Math.PI}rad) translateX(${distance}px) scale(0)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: duration * 1000,
+                    easing: 'ease-out'
+                }).onfinish = () => particle.remove();
+            }, i * 50);
+        }
+    }
+    
+    // Sound effects (optional - won't error if not implemented)
+    function playSpinSound() {
+        // Placeholder for spin start sound
+    }
+    
+    function playTickSound(volume) {
+        // Placeholder for tick sound
+    }
+    
+    function playWinSound() {
+        // Placeholder for win sound
+    }
+    
+    // Create confetti effect
     function createConfetti() {
         const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFEEA7', '#FC6170'];
         const confettiCount = 150;
@@ -490,132 +821,85 @@
                 confetti.style.width = (Math.random() * 10 + 5) + 'px';
                 confetti.style.height = confetti.style.width;
                 confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
-                confetti.style.animationDelay = Math.random() * 0.5 + 's';
                 confettiContainer.appendChild(confetti);
                 
                 setTimeout(() => confetti.remove(), 5000);
             }, i * 10);
         }
     }
-
-    // Smooth easing function for natural deceleration
-    function easeOutCubic(t) {
-        return 1 - Math.pow(1 - t, 3);
-    }
-
-    // Spin animation with smooth deceleration
-    function spin() {
-        if (isSpinning || players.length === 0) return;
-        
-        isSpinning = true;
-        spinButton.disabled = true;
-        spinCount++;
-        spinCountEl.textContent = spinCount;
-        
-        // Determine target
-        let targetIndex;
-        if (selectedWinner && players.includes(selectedWinner)) {
-            targetIndex = players.indexOf(selectedWinner);
-            console.log('Spinning to selected winner:', selectedWinner, 'at index', targetIndex);
-            selectedWinner = null; // Clear after use
-        } else {
-            targetIndex = Math.floor(Math.random() * players.length);
-            console.log('Random winner at index:', targetIndex);
-        }
-        
-        // Calculate rotation needed
-        const segmentAngle = (2 * Math.PI) / players.length;
-        
-        // We want the target segment to be at the top (where arrow points)
-        // Since wheel draws from top and goes clockwise, 
-        // rotation = 0 means index 0 is at top
-        // To get index N at top, we need to rotate by N * segmentAngle
-        const targetSegmentRotation = targetIndex * segmentAngle;
-        
-        // Calculate total rotation with multiple spins
-        const spins = config.minSpins + Math.random() * (config.maxSpins - config.minSpins);
-        const totalRotation = spins * 2 * Math.PI + targetSegmentRotation - (currentRotation % (2 * Math.PI));
-        
-        // Animation
-        const startTime = Date.now();
-        const startRotation = currentRotation;
-        const finalRotation = startRotation + totalRotation;
-        
-        function animate() {
-            const elapsed = Date.now() - startTime;
-            const progress = Math.min(elapsed / config.spinDuration, 1);
-            
-            // Apply easing for smooth deceleration
-            const easedProgress = easeOutCubic(progress);
-            
-            // Update rotation
-            currentRotation = startRotation + totalRotation * easedProgress;
-            drawWheel();
-            updateDebugInfo();
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // Animation complete - set exact final rotation
-                currentRotation = finalRotation;
-                
-                // Normalize to ensure we're in 0-2π range
-                while (currentRotation < 0) currentRotation += 2 * Math.PI;
-                currentRotation = currentRotation % (2 * Math.PI);
-                
-                drawWheel();
-                updateDebugInfo();
-                
-                // The winner should be the target we calculated
-                currentWinner = players[targetIndex];
-                
-                // Verify
-                const actualWinnerIndex = getWinnerAtPosition();
-                console.log('Target:', players[targetIndex], 'Actual:', players[actualWinnerIndex]);
-                
-                // Show winner after a short delay
-                setTimeout(() => {
-                    isSpinning = false;
-                    spinButton.disabled = false;
-                    winnerNameEl.textContent = currentWinner;
-                    winnerModal.classList.add('show');
-                    createConfetti();
-                }, 500);
-            }
-        }
-        
-        animate();
-    }
-
+    
     // Close winner modal
     function closeWinnerModal() {
         winnerModal.classList.remove('show');
         confettiContainer.innerHTML = '';
     }
-
-    // Remove winner
+    
+    // Remove winner and reload
     removeWinnerBtn.addEventListener('click', () => {
-        if (currentWinner) {
-            window.location.href = `/remove_winner/${encodeURIComponent(currentWinner)}`;
-        }
+        const winnerIndex = getWinnerIndex();
+        const winner = players[winnerIndex];
+        window.location.href = `/remove_winner/${encodeURIComponent(winner)}`;
     });
-
+    
     // Event listeners
     spinButton.addEventListener('click', spin);
     canvas.addEventListener('click', spin);
     
-    // Toggle debug with D key
+    // Toggle debug mode with 'D' key
     document.addEventListener('keydown', (e) => {
         if (e.key === 'd' || e.key === 'D') {
-            debugInfo.classList.toggle('show');
+            debugMode = !debugMode;
+            debugPanel.classList.toggle('show');
+            drawWheel(); // Redraw to show/hide indices
+            updateDebugPanel();
         }
     });
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
     
     // Make closeWinnerModal global
     window.closeWinnerModal = closeWinnerModal;
     
-    // Initial draw
+    // Set spin speed
+    function setSpeed(duration) {
+        SPIN_DURATION = duration;
+        
+        // Update time display
+        document.getElementById('spinTime').textContent = (duration / 1000) + 's';
+        
+        // Update button styles
+        document.querySelectorAll('[onclick^="setSpeed"]').forEach(btn => {
+            if (btn.getAttribute('onclick').includes(duration)) {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+            } else {
+                btn.style.background = '#e0e0e0';
+                btn.style.color = '#333';
+            }
+        });
+        
+        // Show feedback
+        showNotification(`Tốc độ quay: ${duration / 1000}s`);
+    }
+    
+    // Make setSpeed global
+    window.setSpeed = setSpeed;
+    
+    // Initialize
+    checkSelectedWinner();
     drawWheel();
-    updateDebugInfo();
+    updateDebugPanel();
 </script>
 {% endblock %}
