@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách người chơi - Wheel of Names{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Danh sách người chơi</h2>
+    
+    {% if players %}
+        <div style="margin: 1rem 0;">
+            <ul style="list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;">
+                {% for player in players %}
+                    <li style="background: var(--light-bg); padding: 0.5rem 1rem; border-radius: 5px;">{{ player }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{{ url_for('wheel') }}" class="btn">Bắt đầu quay</a>
+            <a href="{{ url_for('index') }}" class="btn">Quay lại nhập tên</a>
+            <a href="{{ url_for('reset') }}" class="btn btn-danger">Reset</a>
+        </div>
+    {% else %}
+        <p>Chưa có người chơi nào được thêm vào. <a href="{{ url_for('index') }}">Nhập tên người chơi</a></p>
+    {% endif %}
+</div>
+{% endblock %} 

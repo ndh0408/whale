@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Vòng quay - Wheel of Names{% endblock %}
+
+{% block extra_css %}
+<style>
+    .wheel-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    #wheelCanvas {
+        max-width: 600px;
+        width: 100%;
+        height: auto;
+    }
+
+    .controls {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .winner-display {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--accent-color);
+        text-align: center;
+        margin: 1rem 0;
+        min-height: 3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Vòng quay may mắn</h2>
+    
+    {% if players %}
+        <div class="wheel-container">
+            <canvas id="wheelCanvas"></canvas>
+            <div class="winner-display" id="winnerDisplay"></div>
+            <div class="controls">
+                <button id="spinButton" class="btn">Quay</button>
+                <a href="{{ url_for('players') }}" class="btn">Quay lại danh sách</a>
+                <a href="{{ url_for('reset') }}" class="btn btn-danger">Reset</a>
+            </div>
+        </div>
+    {% else %}
+        <p>Chưa có người chơi nào được thêm vào. <a href="{{ url_for('index') }}">Nhập tên người chơi</a></p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const players = {{ players|tojson }};
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const spinButton = document.getElementById('spinButton');
+    const winnerDisplay = document.getElementById('winnerDisplay');
+    
+    // Set canvas size
+    canvas.width = 600;
+    canvas.height = 600;
+    
+    // Colors for wheel segments
+    const colors = [
+        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+        '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'
+    ];
+    
+    let currentRotation = 0;
+    let isSpinning = false;
+    
+    function drawWheel() {
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const radius = Math.min(centerX, centerY) - 10;
+        
+        // Clear canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw wheel segments
+        const segmentAngle = (2 * Math.PI) / players.length;
+        
+        players.forEach((player, index) => {
+            const startAngle = currentRotation + index * segmentAngle;
+            const endAngle = startAngle + segmentAngle;
+            
+            // Draw segment
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+            ctx.closePath();
+            
+            ctx.fillStyle = colors[index % colors.length];
+            ctx.fill();
+            ctx.stroke();
+            
+            // Draw text
+            ctx.save();
+            ctx.translate(centerX, centerY);
+            ctx.rotate(startAngle + segmentAngle / 2);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 16px Arial';
+            ctx.fillText(player, radius - 20, 5);
+            ctx.restore();
+        });
+        
+        // Draw center circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.fill();
+        ctx.stroke();
+        
+        // Draw arrow
+        ctx.beginPath();
+        ctx.moveTo(centerX + radius + 10, centerY);
+        ctx.lineTo(centerX + radius - 10, centerY - 15);
+        ctx.lineTo(centerX + radius - 10, centerY + 15);
+        ctx.closePath();
+        ctx.fillStyle = '#e74c3c';
+        ctx.fill();
+    }
+    
+    function spinWheel() {
+        if (isSpinning) return;
+        
+        isSpinning = true;
+        spinButton.disabled = true;
+        winnerDisplay.textContent = '';
+        
+        const spinDuration = 5000; // 5 seconds
+        const startTime = Date.now();
+        const startRotation = currentRotation;
+        const spinAngle = 5 + Math.random() * 5; // 5-10 full rotations
+        
+        function animate() {
+            const elapsed = Date.now() - startTime;
+            const progress = Math.min(elapsed / spinDuration, 1);
+            
+            // Easing function for smooth deceleration
+            const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+            
+            currentRotation = startRotation + (spinAngle * 2 * Math.PI * easeOut(progress));
+            drawWheel();
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                isSpinning = false;
+                spinButton.disabled = false;
+                
+                // Calculate winner
+                const normalizedRotation = currentRotation % (2 * Math.PI);
+                const segmentAngle = (2 * Math.PI) / players.length;
+                const winnerIndex = Math.floor(
+                    (2 * Math.PI - normalizedRotation) / segmentAngle
+                ) % players.length;
+                
+                winnerDisplay.textContent = `Người thắng: ${players[winnerIndex]}`;
+            }
+        }
+        
+        animate();
+    }
+    
+    // Initial draw
+    drawWheel();
+    
+    // Event listeners
+    spinButton.addEventListener('click', spinWheel);
+</script>
+{% endblock %} 

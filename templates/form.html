@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Nhập tên - Wheel of Names{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Nhập tên người chơi</h2>
+    <p class="help-text">Nhập tên người chơi, mỗi tên một dòng hoặc phân cách bằng dấu phẩy (,)</p>
+    
+    <form action="{{ url_for('players') }}" method="POST">
+        <div style="margin: 1rem 0;">
+            <textarea name="names" rows="10" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px;" placeholder="Nhập tên người chơi ở đây..."></textarea>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button type="submit" class="btn">Gửi</button>
+            <a href="{{ url_for('reset') }}" class="btn btn-danger">Reset</a>
+        </div>
+    </form>
+</div>
+{% endblock %} 
