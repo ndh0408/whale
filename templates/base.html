@@ -3,14 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Wheel of Names - Gia Nguyễn APT{% endblock %}</title>
+    <title>{% block title %}Wheel of Fortune - Gia Nguyễn APT{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --secondary-color: #3498db;
-            --accent-color: #e74c3c;
-            --text-color: #333;
-            --light-bg: #f5f6fa;
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #f56565;
+            --success: #48bb78;
+            --warning: #ed8936;
+            --dark: #2d3748;
+            --light: #f7fafc;
+            --text: #2d3748;
+            --border: #e2e8f0;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         * {
@@ -20,10 +33,46 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: var(--text-color);
-            background-color: var(--light-bg);
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+            opacity: 0.1;
+        }
+
+        .bg-animation span {
+            position: absolute;
+            display: block;
+            width: 20px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            animation: move 25s linear infinite;
+            bottom: -150px;
+        }
+
+        @keyframes move {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+                border-radius: 0;
+            }
+            100% {
+                transform: translateY(-1000px) rotate(720deg);
+                opacity: 0;
+                border-radius: 50%;
+            }
         }
 
         .container {
@@ -32,105 +81,245 @@
             padding: 20px;
         }
 
+        /* Header */
         header {
-            background-color: var(--primary-color);
-            color: white;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             padding: 1rem 0;
-            text-align: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .logo {
-            max-width: 200px;
-            margin-bottom: 1rem;
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 700;
+            font-size: 1.5rem;
         }
 
-        nav {
-            background-color: var(--secondary-color);
-            padding: 1rem 0;
+        .site-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--primary);
         }
 
+        /* Navigation */
         nav ul {
             list-style: none;
             display: flex;
-            justify-content: center;
-            gap: 2rem;
+            gap: 0.5rem;
         }
 
         nav a {
-            color: white;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            color: var(--text);
             text-decoration: none;
-            font-weight: bold;
-            transition: color 0.3s;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
 
         nav a:hover {
-            color: var(--light-bg);
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 0.8rem 1.5rem;
-            background-color: var(--secondary-color);
+            background: var(--primary);
             color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-weight: bold;
-            transition: background-color 0.3s;
+            transform: translateY(-2px);
         }
 
-        .btn:hover {
-            background-color: var(--primary-color);
+        nav a.active {
+            background: var(--primary);
+            color: white;
         }
 
-        .btn-danger {
-            background-color: var(--accent-color);
-        }
-
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
+        /* Main Content */
         main {
             padding: 2rem 0;
+            min-height: calc(100vh - 200px);
         }
 
+        /* Card */
         .card {
-            background: white;
-            border-radius: 10px;
-            padding: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow-lg);
             margin-bottom: 2rem;
+            animation: slideUp 0.5s ease-out;
         }
 
-        footer {
-            text-align: center;
-            padding: 1rem 0;
-            background-color: var(--primary-color);
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            transition: left 0.3s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--primary);
             color: white;
-            margin-top: 2rem;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #e53e3e;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            nav ul {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
         }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <span style="left: 10%; animation-delay: 0s;"></span>
+        <span style="left: 20%; animation-delay: 2s; width: 80px; height: 80px;"></span>
+        <span style="left: 35%; animation-delay: 4s;"></span>
+        <span style="left: 50%; animation-delay: 0s; width: 60px; height: 60px;"></span>
+        <span style="left: 70%; animation-delay: 3s;"></span>
+        <span style="left: 85%; animation-delay: 1s;"></span>
+        <span style="left: 25%; animation-delay: 5s; width: 110px; height: 110px;"></span>
+        <span style="left: 90%; animation-delay: 3s;"></span>
+    </div>
+
     <header>
         <div class="container">
-            <img src="{{ url_for('static', filename='logo.png') }}" alt="Gia Nguyễn APT Logo" class="logo">
-            <h1>Wheel of Names</h1>
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">GN</div>
+                    <h1 class="site-title">Gia Nguyễn APT</h1>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">
+                            <i class="fas fa-plus-circle"></i> Nhập tên
+                        </a></li>
+                        <li><a href="{{ url_for('players') }}" class="{% if request.endpoint == 'players' %}active{% endif %}">
+                            <i class="fas fa-users"></i> Danh sách
+                        </a></li>
+                        <li><a href="{{ url_for('wheel') }}" class="{% if request.endpoint == 'wheel' %}active{% endif %}">
+                            <i class="fas fa-dharmachakra"></i> Vòng quay
+                        </a></li>
+                    </ul>
+                </nav>
+            </div>
         </div>
     </header>
-
-    <nav>
-        <div class="container">
-            <ul>
-                <li><a href="{{ url_for('index') }}">Nhập tên</a></li>
-                <li><a href="{{ url_for('players') }}">Danh sách</a></li>
-                <li><a href="{{ url_for('wheel') }}">Vòng quay</a></li>
-            </ul>
-        </div>
-    </nav>
 
     <main>
         <div class="container">
@@ -140,10 +329,10 @@
 
     <footer>
         <div class="container">
-            <p>&copy; 2024 Gia Nguyễn APT. All rights reserved.</p>
+            <p>&copy; 2024 Gia Nguyễn APT. Designed with <i class="fas fa-heart" style="color: #e53e3e;"></i> by GN Team</p>
         </div>
     </footer>
 
     {% block extra_js %}{% endblock %}
 </body>
-</html> 
+</html>
